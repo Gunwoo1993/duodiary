@@ -16,6 +16,8 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
+      target: ['es2019', 'chrome87', 'safari13'],
+      cssTarget: ['chrome87', 'safari13'],
       rollupOptions: {
         external: ['@google/generativeai'],
       },
