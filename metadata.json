@@ -1,0 +1,6 @@
+{
+  "name": "DuoDiary",
+  "description": "A shared diary for couples featuring mood tracking, timeline, calendar, anniversary alerts, and a custom coupon shop.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

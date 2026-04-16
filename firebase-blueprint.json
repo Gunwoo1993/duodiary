@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "coupleId": { "type": "string" },
+        "partnerUid": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Couple": {
+      "title": "Couple",
+      "description": "Shared information for a couple",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "users": { "type": "array", "items": { "type": "string" } },
+        "anniversaryDate": { "type": "string", "format": "date" },
+        "stats": { "type": "object" }
+      },
+      "required": ["id", "users"]
+    },
+    "DiaryEntry": {
+      "title": "DiaryEntry",
+      "description": "A diary entry created by a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "content": { "type": "string" },
+        "photoURLs": { "type": "array", "items": { "type": "string" } },
+        "mood": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "isFavorite": { "type": "boolean" },
+        "authorUid": { "type": "string" },
+        "reactions": { "type": "object" },
+        "comments": { "type": "array" }
+      },
+      "required": ["id", "date", "content", "authorUid"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "A gift coupon (ticket) for the partner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["available", "used"] },
+        "senderUid": { "type": "string" },
+        "receiverUid": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "status", "senderUid", "receiverUid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/couples/{coupleId}": {
+      "schema": "Couple",
+      "description": "Couple shared documents"
+    },
+    "/couples/{coupleId}/diary/{entryId}": {
+      "schema": "DiaryEntry",
+      "description": "Diary entries for a couple"
+    },
+    "/couples/{coupleId}/coupons/{couponId}": {
+      "schema": "Coupon",
+      "description": "Coupons for a couple"
+    }
+  }
+}
