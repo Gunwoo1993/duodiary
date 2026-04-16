@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseEnvConfigured, supabase } from '../lib/supabaseClient';
 import { getMyProfile, upsertMyProfile } from '../lib/data/profiles';
 import { UserProfile } from '../types';
 import { toast } from 'sonner';
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showLogin, setShowLogin] = useState(false);
 
   const isSupabaseConfigured = useMemo(() => {
-    return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+    return isSupabaseEnvConfigured;
   }, []);
 
   const isInvalidJwtError = (err: unknown) =>
