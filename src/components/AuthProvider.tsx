@@ -74,6 +74,20 @@ function buildDemoAuthState(username = DEFAULT_DEMO_USERNAME) {
   return { mockUser, mockProfile };
 }
 
+function buildFallbackProfileFromUser(input: {
+  uid: string;
+  displayName?: string | null;
+  email?: string | null;
+  photoURL?: string | null;
+}): UserProfile {
+  return {
+    uid: input.uid,
+    displayName: input.displayName ?? null,
+    email: input.email ?? null,
+    photoURL: input.photoURL ?? null,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const [user, setUser] = useState<{ uid: string; displayName: string | null; email: string | null; photoURL: string | null } | null>(null);
@@ -148,36 +162,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const u = data.session.user;
-        setUser({
+        const mappedUser = {
           uid: u.id,
           displayName: (u.user_metadata?.full_name as string | undefined) ?? null,
           email: u.email ?? null,
           photoURL: (u.user_metadata?.avatar_url as string | undefined) ?? null
-        });
+        };
+        setUser(mappedUser);
 
         // Ensure profile exists, then read it.
-        await withTimeout(
-          upsertMyProfile({}),
-          REQUEST_TIMEOUT_MS,
-          t('error.profileSyncTimeout')
-        );
-        const p = await withTimeout(
-          getMyProfile(),
-          REQUEST_TIMEOUT_MS,
-          t('error.profileFetchTimeout')
-        );
-        setProfile(
-          p
-            ? {
-                uid: p.id,
-                displayName: p.display_name,
-                email: p.email,
-                photoURL: p.photo_url ?? null,
-                phoneId: (p as any).phone_id ?? null,
-                onboardingCompleted: Boolean((p as any).onboarding_completed)
-              }
-            : null
-        );
+        try {
+          await withTimeout(
+            upsertMyProfile({}),
+            REQUEST_TIMEOUT_MS,
+            t('error.profileSyncTimeout')
+          );
+          const p = await withTimeout(
+            getMyProfile(),
+            REQUEST_TIMEOUT_MS,
+            t('error.profileFetchTimeout')
+          );
+          setProfile(
+            p
+              ? {
+                  uid: p.id,
+                  displayName: p.display_name,
+                  email: p.email,
+                  photoURL: p.photo_url ?? null,
+                  phoneId: (p as any).phone_id ?? null,
+                  onboardingCompleted: Boolean((p as any).onboarding_completed)
+                }
+              : buildFallbackProfileFromUser(mappedUser)
+          );
+        } catch (profileError) {
+          console.error('[AuthProvider] profile bootstrap failed:', profileError);
+          setProfile(buildFallbackProfileFromUser(mappedUser));
+        }
       } catch (e: any) {
         if (isInvalidJwtError(e)) {
           await resetBrokenSession();
@@ -210,35 +230,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const u = newSession.user;
-        setUser({
+        const mappedUser = {
           uid: u.id,
           displayName: (u.user_metadata?.full_name as string | undefined) ?? null,
           email: u.email ?? null,
           photoURL: (u.user_metadata?.avatar_url as string | undefined) ?? null
-        });
+        };
+        setUser(mappedUser);
 
-        await withTimeout(
-          upsertMyProfile({}),
-          REQUEST_TIMEOUT_MS,
-          t('error.profileSyncTimeout')
-        );
-        const p = await withTimeout(
-          getMyProfile(),
-          REQUEST_TIMEOUT_MS,
-          t('error.profileFetchTimeout')
-        );
-        setProfile(
-          p
-            ? {
-                uid: p.id,
-                displayName: p.display_name,
-                email: p.email,
-                photoURL: p.photo_url ?? null,
-                phoneId: (p as any).phone_id ?? null,
-                onboardingCompleted: Boolean((p as any).onboarding_completed)
-              }
-            : null
-        );
+        try {
+          await withTimeout(
+            upsertMyProfile({}),
+            REQUEST_TIMEOUT_MS,
+            t('error.profileSyncTimeout')
+          );
+          const p = await withTimeout(
+            getMyProfile(),
+            REQUEST_TIMEOUT_MS,
+            t('error.profileFetchTimeout')
+          );
+          setProfile(
+            p
+              ? {
+                  uid: p.id,
+                  displayName: p.display_name,
+                  email: p.email,
+                  photoURL: p.photo_url ?? null,
+                  phoneId: (p as any).phone_id ?? null,
+                  onboardingCompleted: Boolean((p as any).onboarding_completed)
+                }
+              : buildFallbackProfileFromUser(mappedUser)
+          );
+        } catch (profileError) {
+          console.error('[AuthProvider] profile auth-state sync failed:', profileError);
+          setProfile(buildFallbackProfileFromUser(mappedUser));
+        }
       } catch (e: any) {
         if (isInvalidJwtError(e)) {
           await resetBrokenSession();
@@ -247,8 +273,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         const msg = String(e?.message ?? e ?? '');
         toast.error(msg ? `${t('error.authFailed')}: ${localizeErrorMessage(msg, t)}` : t('error.authFailed'));
-        clearAuthSession();
-        setShowLogin(true);
+        if (!newSession?.user) {
+          clearAuthSession();
+          setShowLogin(true);
+        }
       } finally {
         setLoading(false);
       }
